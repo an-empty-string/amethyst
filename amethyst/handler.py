@@ -2,23 +2,22 @@ from .response import Status, Response
 from .request import Context
 from urllib.parse import urlparse
 
-
-def dummy_handler(url, cert):
-    return Response(
-        Status.SUCCESS, "text/plain",
-        b"hello world! " + url.encode()
-    )
+import logging
 
 
 class GenericHandler():
     def __init__(self, url_map):
         self.url_map = url_map
+        self.access_log = logging.getLogger("amethyst.access")
+        self.log = logging.getLogger("amethyst.handler.GenericHandler")
 
     async def __call__(self, url, conn):
         result = urlparse(url)
 
         host = result.netloc
         if host not in self.url_map:
+            self.log.warn(f"Received request for host {host} not in URL map")
+
             return Response(
                 Status.PROXY_REQUEST_REFUSED,
                 f"{host} is not served here.",
@@ -30,12 +29,20 @@ class GenericHandler():
             if result.path.startswith(path):
                 truncated_path = result.path[len(path):]
 
-                return await paths[path](Context(
+                resp = await paths[path](Context(
                     result.netloc, result.path, truncated_path,
                     result.query, conn
                 ))
 
-        return Response(
-            Status.SUCCESS, "text/plain",
-            str(result).encode()
+                break
+
+        else:
+            resp = Response(Status.NOT_FOUND,
+                            f"{result.path} was not found on this server.")
+
+        self.access_log.info(
+            f"{conn.peer_addr[0]} {result.path} "
+            f"{resp.status_code.value}: {resp.meta}"
         )
+
+        return resp

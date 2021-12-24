@@ -14,4 +14,7 @@ setup(
             "amethyst = amethyst.kindergarten:cli",
         ],
     },
+    install_requires=[
+        "cryptography",
+    ]
 )

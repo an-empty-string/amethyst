@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import os.path
 import subprocess
@@ -14,6 +15,9 @@ class FilesystemResource():
                  cgi=False,
                  mime_types=None,
                  default_mime_type="application/octet-stream"):
+
+        self.log = logging.getLogger("amethyst.resource.FilesystemResource")
+        self.cgi_log = logging.getLogger("amethyst.resource.FilesystemResource.cgi")
 
         self.directory_indexing = directory_indexing
         self.cgi = cgi
@@ -42,6 +46,8 @@ class FilesystemResource():
         with open(filename, "rb") as f:
             contents = f.read()
 
+        self.log.debug(f"Sending file {filename} ({len(contents)} bytes) as {mime_type}")
+
         return Response(Status.SUCCESS, mime_type, contents)
 
     async def do_cgi(self, ctx, filename):
@@ -57,12 +63,21 @@ class FilesystemResource():
             "SERVER_SOFTWARE": "Amethyst",
         }
 
+        self.log.debug(f"Starting CGI script {filename}")
+
         proc = await asyncio.create_subprocess_exec(
             filename, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=(os.environ | env)
         )
 
         stdout, stderr = await proc.communicate()
+
+        self.cgi_log.info(f"{filename} returned {proc.returncode} "
+                          f"(stdout bytes {len(stdout)}, "
+                          f"stderr bytes {len(stderr)})")
+
+        if proc.returncode != 0:
+            return Response(Status.CGI_ERROR, f"Script returned {proc.returncode}")
 
         content_type = "text/gemini"
         status = Status.SUCCESS
@@ -95,14 +110,18 @@ class FilesystemResource():
 
         if os.path.isdir(full_path):
             if not (full_path + os.sep).startswith(self.base_path + os.sep):
+                self.log.warn(f"Tried to handle from disallowed path {full_path}!")
                 return Response(Status.BAD_REQUEST, "Invalid path")
 
             for filename in self.index_files:
                 filename = os.path.join(full_path, filename)
                 if os.path.exists(filename):
+                    self.log.debug(f"Sending index file {filename} for request to {ctx.orig_path}")
                     return self.send_file(filename)
 
             if self.directory_indexing:
+                self.log.debug(f"Performing directory listing of {full_path} for request to {ctx.orig_path}")
+
                 lines = [f"# Directory listing of {ctx.orig_path}", ""]
 
                 for filename in sorted(os.listdir(full_path)):
@@ -116,6 +135,7 @@ class FilesystemResource():
 
         elif os.path.isfile(full_path):
             if full_path != self.base_path and not full_path.startswith(self.base_path + os.sep):
+                self.log.warn(f"Tried to handle from disallowed path {full_path}!")
                 return Response(Status.BAD_REQUEST, "Invalid path")
 
             if self.cgi and os.access(full_path, os.X_OK):
@@ -123,5 +143,6 @@ class FilesystemResource():
 
             return self.send_file(full_path)
 
+        self.log.debug("{full_path} not found")
         return Response(Status.NOT_FOUND,
                         f"{ctx.orig_path} was not found on this server.")
