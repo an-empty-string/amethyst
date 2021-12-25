@@ -13,6 +13,9 @@ setup(
         "console_scripts": [
             "amethyst = amethyst.kindergarten:cli",
         ],
+        "amethyst.resources": [
+            "filesystem = amethyst.resource:FilesystemResource",
+        ]
     },
     install_requires=[
         "cryptography",

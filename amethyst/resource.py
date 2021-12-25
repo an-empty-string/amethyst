@@ -6,12 +6,15 @@ import subprocess
 
 from .mime import default_mime_types
 from .response import Status, Response
+from .request import Context
 
+from typing import Callable, Awaitable
+
+Resource = Callable[[Context], Awaitable[Response]]
 
 class FilesystemResource():
-    def __init__(self, base_path,
-                 index_files=None,
-                 directory_indexing=False,
+    def __init__(self, root,
+                 autoindex=False,
                  cgi=False,
                  mime_types=None,
                  default_mime_type="application/octet-stream"):
@@ -19,12 +22,10 @@ class FilesystemResource():
         self.log = logging.getLogger("amethyst.resource.FilesystemResource")
         self.cgi_log = logging.getLogger("amethyst.resource.FilesystemResource.cgi")
 
-        self.directory_indexing = directory_indexing
+        self.autoindex = autoindex
         self.cgi = cgi
 
-        self.index_files = index_files
-        if self.index_files is None:
-            self.index_files = ["index.gmi"]
+        self.index_files = ["index.gmi"]
 
         self.mime_types = mime_types
         if self.mime_types is None:
@@ -35,9 +36,9 @@ class FilesystemResource():
             self.postprocessors = {}
 
         self.default_mime_type = default_mime_type
-        self.base_path = os.path.abspath(base_path)
+        self.root = os.path.abspath(root)
 
-    def send_file(self, filename):
+    def send_file(self, filename: str) -> Response:
         mime_type = self.default_mime_type
         for ext in sorted(self.mime_types, key=len):
             if filename.lower().endswith(ext.lower()):
@@ -50,7 +51,7 @@ class FilesystemResource():
 
         return Response(Status.SUCCESS, mime_type, contents)
 
-    async def do_cgi(self, ctx, filename):
+    async def do_cgi(self, ctx: Context, filename: str) -> Response:
         # TODO: signal client certificates here
         env = {
             "GATEWAY_INTERFACE": "CGI/1.1",
@@ -58,7 +59,7 @@ class FilesystemResource():
             "REMOTE_ADDR": ctx.conn.peer_addr[0],
             "SCRIPT_NAME": ctx.orig_path,
             "SERVER_NAME": ctx.host,
-            "SERVER_PORT": str(ctx.conn.my_port),
+            "SERVER_PORT": str(ctx.conn.server.config.port),
             "SERVER_PROTOCOL": "Gemini/0.16.0",
             "SERVER_SOFTWARE": "Amethyst",
         }
@@ -105,11 +106,11 @@ class FilesystemResource():
 
         return Response(status, content_type, result)
 
-    async def __call__(self, ctx):
-        full_path = os.path.abspath(os.path.join(self.base_path, ctx.path))
+    async def __call__(self, ctx: Context) -> Response:
+        full_path = os.path.abspath(os.path.join(self.root, ctx.path))
 
         if os.path.isdir(full_path):
-            if not (full_path + os.sep).startswith(self.base_path + os.sep):
+            if not (full_path + os.sep).startswith(self.root + os.sep):
                 self.log.warn(f"Tried to handle from disallowed path {full_path}!")
                 return Response(Status.BAD_REQUEST, "Invalid path")
 
@@ -119,7 +120,7 @@ class FilesystemResource():
                     self.log.debug(f"Sending index file {filename} for request to {ctx.orig_path}")
                     return self.send_file(filename)
 
-            if self.directory_indexing:
+            if self.autoindex:
                 self.log.debug(f"Performing directory listing of {full_path} for request to {ctx.orig_path}")
 
                 lines = [f"# Directory listing of {ctx.orig_path}", ""]
@@ -134,7 +135,7 @@ class FilesystemResource():
                 return Response(Status.SUCCESS, "text/gemini", listing)
 
         elif os.path.isfile(full_path):
-            if full_path != self.base_path and not full_path.startswith(self.base_path + os.sep):
+            if full_path != self.root and not full_path.startswith(self.root + os.sep):
                 self.log.warn(f"Tried to handle from disallowed path {full_path}!")
                 return Response(Status.BAD_REQUEST, "Invalid path")
 

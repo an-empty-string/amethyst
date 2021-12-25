@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
+from .server import Server
+
 
 @dataclass
 class Connection():
-    my_port: int
+    server: Server
     peer_addr: str
     peer_cert: Optional[bytes] = None
 

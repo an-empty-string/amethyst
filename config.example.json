@@ -1,0 +1,14 @@
+{
+  "hosts": [{
+    "name": "gemini.tris.fyi",
+    "tls": "auto",
+    "paths": {
+      "/": {
+        "type": "filesystem",
+        "root": "/var/gemini",
+        "cgi": false,
+        "autoindex": true
+      }
+    }
+  }]
+}
