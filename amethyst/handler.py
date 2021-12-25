@@ -23,14 +23,18 @@ class GenericHandler():
                 f"{host} is not served here.",
             )
 
+        req_path = result.path
+        if req_path == "":
+            req_path = "/"
+
         paths = self.url_map[host]
 
         for path in sorted(paths, key=len, reverse=True):
-            if result.path.startswith(path):
-                truncated_path = result.path[len(path):]
+            if req_path.startswith(path):
+                truncated_path = req_path[len(path):]
 
                 resp = await paths[path](Context(
-                    result.netloc, result.path, truncated_path,
+                    result.netloc, req_path, truncated_path,
                     result.query, conn
                 ))
 
@@ -38,10 +42,10 @@ class GenericHandler():
 
         else:
             resp = Response(Status.NOT_FOUND,
-                            f"{result.path} was not found on this server.")
+                            f"{req_path} was not found on this server.")
 
         self.access_log.info(
-            f"{conn.peer_addr[0]} {result.path} "
+            f"{conn.peer_addr[0]} {req_path} "
             f"{resp.status_code.value}: {resp.meta}"
         )
 
