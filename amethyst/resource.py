@@ -107,7 +107,7 @@ class FilesystemResource():
         return Response(status, content_type, result)
 
     async def __call__(self, ctx: Context) -> Response:
-        full_path = os.path.abspath(os.path.join(self.root, ctx.path))
+        full_path = os.path.abspath(os.path.join(self.root, ctx.path.lstrip("/")))
 
         if os.path.isdir(full_path):
             if not (full_path + os.sep).startswith(self.root + os.sep):
