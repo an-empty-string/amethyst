@@ -24,18 +24,17 @@ class TLSConfig():
     def from_config(cls, host, cfg):
         o = cls(host)
 
-        if cfg == "auto":
-            cfg = {
-                "auto": True
-            }
-
         state = os.getenv("STATE_DIRECTORY", ".")
 
-        o.auto = cfg.get("auto", False)
-        o.cert_path = cfg.get("cert_path", 
-            os.path.join(state, f"{host}.cert.pem"))
-        o.key_path = cfg.get("key_path", 
-            os.path.join(state, f"{host}.key.pem"))
+        o.auto = cfg.get("auto", True)
+
+        o.cert_path = cfg.get("cert_path", None);
+        if o.cert_path is None:
+            o.cert_path = os.path.join(state, f"{host}.cert.pem")
+
+        o.key_path = cfg.get("key_path", None);
+        if o.key_path is None:
+            o.key_path = os.path.join(state, f"{host}.key.pem")
 
         return o
 
@@ -78,7 +77,7 @@ class HostConfig():
     @classmethod
     def from_config(cls, cfg):
         host = cfg["name"]
-        tls = TLSConfig.from_config(host, cfg["tls"])
+        tls = TLSConfig.from_config(host, cfg.get("tls", {}))
         path_map = {
             path: cls._construct_resource(config)
             for path, config in cfg["paths"].items()
@@ -94,7 +93,7 @@ class Config():
     port: int = 1965
 
     def load(self, cfg):
-        self.hosts =[
+        self.hosts = [
             HostConfig.from_config(host)
             for host in cfg.get("hosts", [])
         ]
