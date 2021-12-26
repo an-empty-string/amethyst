@@ -3,8 +3,12 @@ from amethyst.response import Response, Status
 import importlib
 import inspect
 import pkgutil
+import re
 import sys
 import textwrap
+
+SITE_PACKAGES_RE = re.compile(r"lib/python[^/]+/site-packages")
+PYTHON3_RE = re.compile(r"python3[^-]*")
 
 
 class PydocResource():
@@ -24,9 +28,9 @@ class PydocResource():
         lines = []
 
         if name is None:
-            name = []
-
-        name = ".".join(name + [cls.__name__])
+            name = cls.__name__
+        else:
+            name = f"{name}.{cls.__name__}"
 
         lines.append(f"### {name}")
         if (clsdoc := getattr(cls, "__doc__")):
@@ -44,7 +48,7 @@ class PydocResource():
 
         members["class"].sort()
         for _, scls in members["class"]:
-            lines.append(self.doc_cls(scls, name))
+            lines.append(self.doc_class(scls, name))
 
         members["function"].sort()
         for name, func in members["function"]:
@@ -157,9 +161,11 @@ class PydocResource():
         for dirname in sorted(sys.path):
             display = dirname
             if display.startswith("/nix/store/"):
-                display = f"(nix store)/{display[44:]}"
+                display = f"(nix)/{display[44:]}"
 
-            lines.append(f"## {display}")
+            display = SITE_PACKAGES_RE.sub("l/p/s-p", display)
+            display = PYTHON3_RE.sub("p3", display)
+
             modpkgs = []
             for importer, name, ispkg in pkgutil.iter_modules([dirname]):
                 if any((0xD800 <= ord(ch) <= 0xDFFF) for ch in name):
@@ -173,11 +179,13 @@ class PydocResource():
 
                 modpkgs.append((name, ispkg))
 
-            for name, ispkg in sorted(modpkgs):
-                if ispkg:
-                    lines.append(f"=> {name} {name} (package)")
-                else:
-                    lines.append(f"=> {name}")
+            if modpkgs:
+                lines.append(f"## {display}")
+                for name, ispkg in sorted(modpkgs):
+                    if ispkg:
+                        lines.append(f"=> {name} {name} (package)")
+                    else:
+                        lines.append(f"=> {name}")
 
         return "\n".join(lines)
 
