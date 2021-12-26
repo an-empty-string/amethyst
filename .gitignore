@@ -1,0 +1,8 @@
+*.swp
+*.pem
+*.py[co]
+*.egg-info
+/build
+/dist
+/config.test.json
+/env
