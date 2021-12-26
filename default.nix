@@ -1,4 +1,4 @@
-{ lib, python3 }:
+{ lib, python3, extensionPackages ? [] }:
 
 python3.pkgs.buildPythonApplication {
   pname = "amethyst";
@@ -8,5 +8,5 @@ python3.pkgs.buildPythonApplication {
 
   propagatedBuildInputs = [
     python3.pkgs.cryptography
-  ];
+  ] ++ extensionPackages;
 }
