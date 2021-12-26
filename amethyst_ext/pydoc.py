@@ -92,8 +92,8 @@ class PydocResource():
 
         ispkg = (getattr(module, "__package__", "") == modname)
 
-        lines.append("=> _index Back to module index")
-        lines.append("=> _search Go to module by name")
+        lines.append("=> _ Back to module index")
+        lines.append("=> _/search Go to module by name")
         if "." in modname:
             components = modname.split(".")
             for i in range(len(components) - 1, 0, -1):
@@ -146,7 +146,7 @@ class PydocResource():
     def index(self):
         lines = []
 
-        lines.append("=> _search Go to module by name")
+        lines.append("=> _/search Go to module by name")
 
         lines.append("# Built-in modules")
         names = [name for name in sys.builtin_module_names if name != "__main__"]
@@ -183,19 +183,25 @@ class PydocResource():
 
 
     async def __call__(self, ctx):
-        if not ctx.path or ctx.path == "_index":
+        path = ctx.path
+        if not path:
+            return Response(Status.REDIRECT_PERMANENT, ctx.orig_path + "/")
+
+        path = path.strip("/")
+        if not path or path == "_":
             text = self.index()
-        elif ctx.path == "_search":
+
+        elif path == "_/search":
             if ctx.query:
                 try:
                     importlib.import_module(ctx.query)
-                    return Response(Status.REDIRECT_TEMPORARY, ctx.query)
+                    return Response(Status.REDIRECT_TEMPORARY, "../" + ctx.query)
                 except ImportError:
                     return Response(Status.INPUT, f"Sorry, I don't know about {ctx.query}. Module name?")
 
             return Response(Status.INPUT, "Module name?")
         else:
-            text = self.doc_mod(ctx.path)
+            text = self.doc_mod(path)
 
         if text is not None:
             return Response(
