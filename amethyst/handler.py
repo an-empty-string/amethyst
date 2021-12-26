@@ -1,6 +1,7 @@
 from .resource import Resource
 from .response import Status, Response
 from .request import Connection, Context
+from .util import get_path_components
 from urllib.parse import urlparse
 from typing import Dict, Callable, Awaitable
 
@@ -34,12 +35,6 @@ class GenericHandler():
 
         host = result.netloc
 
-        # Ignore port component of URL; we'd only need it if we were proxying,
-        # which we explicitly do not support.
-        #
-        # If we support virtual hosting based on ports in the future, this might
-        # need to be reconsidered.
-
         if (port_match := PORT_RE.search(host)):
             if int(port_match.group(1)) != conn.server.config.port:
                 return Response(
@@ -58,19 +53,27 @@ class GenericHandler():
             )
 
         req_path = result.path
-        if req_path == "":
-            req_path = "/"
+        try:
+            req_path = get_path_components(req_path)
+        except ValueError:
+            return Response(Status.BAD_REQUEST, "Invalid URL")
 
-        paths = self.url_map[host]
+        paths = [
+            (get_path_components(i), v) for i, v in self.url_map[host].items()
+        ]
 
-        for path in sorted(paths, key=len, reverse=True):
-            if req_path.startswith(path):
-                truncated_path = req_path[len(path):]
+        for path, resource in sorted(paths, key=lambda k: len(k[0]), reverse=True):
+            if len(req_path) < len(path) or req_path[:len(path)] != path:
+                continue
 
-                return await paths[path](Context(
-                    result.netloc, req_path, truncated_path,
-                    result.query, conn
-                ))
+            truncated_path = "/".join(req_path[len(path):])
+            if result.path.endswith("/"):
+                truncated_path += "/"
+
+            return await resource(Context(
+                result.netloc, result.path, truncated_path,
+                result.query, conn
+            ))
 
         return Response(
             Status.NOT_FOUND, f"{req_path} was not found on this server."
