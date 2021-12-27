@@ -12,6 +12,7 @@ setup(
     entry_points={
         "amethyst.resources": [
             "pydoc = amethyst_ext.pydoc:PydocResource",
+            "redirect = amethyst_ext.redirect:RedirectResource",
         ],
     },
 )
