@@ -7,7 +7,8 @@ class RedirectResource():
         self.permanent = permanent
 
     async def __call__(self, ctx):
-        new_path = f"{self.to}/{ctx.path}".replace("//", "/")
+        new_path = f"/{ctx.path}".replace("//", "/")
+        new_path = f"{self.to.rstrip('/')}{new_path}"
 
         if self.permanent:
             return Response(Status.REDIRECT_PERMANENT, new_path)
