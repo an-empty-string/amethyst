@@ -95,7 +95,7 @@ class FilesystemResource():
             if key == "content-type":
                 content_type = value
             elif key == "status":
-                if value.isnumeric() and int(value) in status:
+                if value.isnumeric() and int(value) in Status:
                     status = Status[int(value)]
             elif key == "location":
                 return Response(Status.REDIRECT_TEMPORARY, value)
