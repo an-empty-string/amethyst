@@ -1,7 +1,8 @@
 {
+  "port": 1965,
   "hosts": [{
     "name": "gemini.tris.fyi",
-    "tls": "auto",
+    "tls": {"auto": true},
     "paths": {
       "/": {
         "type": "filesystem",
