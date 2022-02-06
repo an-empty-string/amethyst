@@ -49,8 +49,9 @@ class TLSConfig():
             if expires is None or expires > datetime.datetime.now():
                 return context
 
-        elif self.auto:
+        if self.auto:
             expires = tls.update_certificate(self.cert_path, self.key_path, [self.host])
+
         else:
             # We want to keep using a manually-specified certificate forever
             # or at least until the server is restarted / HUPed.
