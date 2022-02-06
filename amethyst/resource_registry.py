@@ -2,5 +2,7 @@ from importlib.metadata import entry_points
 
 registry = {}
 
-for ep in entry_points().get("amethyst.resources"):
-    registry[ep.name] = ep.load()
+eps = entry_points().get("amethyst.resources")
+if eps is not None:
+    for ep in eps:
+        registry[ep.name] = ep.load()
