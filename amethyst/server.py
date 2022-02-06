@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from .config import Config
 
 
-class Server():
+class Server:
     def __init__(
         self,
         config: "Config",
@@ -31,8 +31,10 @@ class Server():
         loop = asyncio.get_event_loop()
 
         return asyncio.start_server(
-            self.handle_connection, port=self.config.port,
-            ssl=self.ssl_context, loop=loop,
+            self.handle_connection,
+            port=self.config.port,
+            ssl=self.ssl_context,
+            loop=loop,
         )
 
     async def handle_connection(self, reader, writer):
@@ -62,7 +64,7 @@ class Server():
 
             response = Response(
                 Status.TEMPORARY_FAILURE,
-                "Exception thrown during request processing; see server logs for details."
+                "Exception thrown during request processing; see server logs for details.",
             )
 
         self.access_log.info(

@@ -5,14 +5,14 @@ from .server import Server
 
 
 @dataclass
-class Connection():
+class Connection:
     server: Server
     peer_addr: str
     peer_cert: Optional[bytes] = None
 
 
 @dataclass
-class Context():
+class Context:
     host: str
     orig_path: str
     path: str

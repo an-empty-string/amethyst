@@ -12,7 +12,7 @@ import os
 
 
 @dataclass
-class TLSConfig():
+class TLSConfig:
     host: str
     auto: bool = False
     cert_path: Optional[str] = None
@@ -28,11 +28,11 @@ class TLSConfig():
 
         o.auto = cfg.get("auto", True)
 
-        o.cert_path = cfg.get("cert_path", None);
+        o.cert_path = cfg.get("cert_path", None)
         if o.cert_path is None:
             o.cert_path = os.path.join(state, f"{host}.cert.pem")
 
-        o.key_path = cfg.get("key_path", None);
+        o.key_path = cfg.get("key_path", None)
         if o.key_path is None:
             o.key_path = os.path.join(state, f"{host}.key.pem")
 
@@ -43,6 +43,7 @@ class TLSConfig():
 
     def get_ssl_context(self):
         from . import tls
+
         if self._context_cache is not None:
             expires, context = self._context_cache
 
@@ -64,7 +65,7 @@ class TLSConfig():
 
 
 @dataclass
-class HostConfig():
+class HostConfig:
     host: str
     tls: TLSConfig
     path_map: Dict[str, Resource]
@@ -73,7 +74,6 @@ class HostConfig():
     def _construct_resource(cls, cfg) -> Resource:
         resource_type = cfg.pop("type", "filesystem")
         return registry[resource_type](**cfg)
-
 
     @classmethod
     def from_config(cls, cfg):
@@ -88,23 +88,18 @@ class HostConfig():
 
 
 @dataclass
-class Config():
+class Config:
     hosts: List[HostConfig]
     handler: Handler
     port: int = 1965
 
     def load(self, cfg):
-        self.hosts = [
-            HostConfig.from_config(host)
-            for host in cfg.get("hosts", [])
-        ]
- 
+        self.hosts = [HostConfig.from_config(host) for host in cfg.get("hosts", [])]
+
         if not self.hosts:
             raise ValueError("Server can't run without any hosts!")
 
-        self.handler = GenericHandler({
-            host.host: host.path_map for host in self.hosts
-        })
+        self.handler = GenericHandler({host.host: host.path_map for host in self.hosts})
 
     @classmethod
     def from_config(cls, cfg):

@@ -10,7 +10,7 @@ import sys
 log = logging.getLogger("amethyst.kindergarten")
 
 
-class ServerManager():
+class ServerManager:
     def __init__(self, config_path):
         self.config_path = config_path
         self.config = Config.from_config(self._get_config())

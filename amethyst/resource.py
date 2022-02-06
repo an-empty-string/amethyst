@@ -12,12 +12,16 @@ from typing import Callable, Awaitable
 
 Resource = Callable[[Context], Awaitable[Response]]
 
-class FilesystemResource():
-    def __init__(self, root,
-                 autoindex=False,
-                 cgi=False,
-                 mime_types=None,
-                 default_mime_type="application/octet-stream"):
+
+class FilesystemResource:
+    def __init__(
+        self,
+        root,
+        autoindex=False,
+        cgi=False,
+        mime_types=None,
+        default_mime_type="application/octet-stream",
+    ):
 
         self.log = logging.getLogger("amethyst.resource.FilesystemResource")
         self.cgi_log = logging.getLogger("amethyst.resource.FilesystemResource.cgi")
@@ -47,7 +51,9 @@ class FilesystemResource():
         with open(filename, "rb") as f:
             contents = f.read()
 
-        self.log.debug(f"Sending file {filename} ({len(contents)} bytes) as {mime_type}")
+        self.log.debug(
+            f"Sending file {filename} ({len(contents)} bytes) as {mime_type}"
+        )
 
         return Response(Status.SUCCESS, mime_type, contents)
 
@@ -67,15 +73,19 @@ class FilesystemResource():
         self.log.debug(f"Starting CGI script {filename}")
 
         proc = await asyncio.create_subprocess_exec(
-            filename, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            env=(os.environ | env)
+            filename,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=(os.environ | env),
         )
 
         stdout, stderr = await proc.communicate()
 
-        self.cgi_log.info(f"{filename} returned {proc.returncode} "
-                          f"(stdout bytes {len(stdout)}, "
-                          f"stderr bytes {len(stderr)})")
+        self.cgi_log.info(
+            f"{filename} returned {proc.returncode} "
+            f"(stdout bytes {len(stdout)}, "
+            f"stderr bytes {len(stderr)})"
+        )
 
         if proc.returncode != 0:
             return Response(Status.CGI_ERROR, f"Script returned {proc.returncode}")
@@ -119,11 +129,15 @@ class FilesystemResource():
             for filename in self.index_files:
                 filename = os.path.join(full_path, filename)
                 if os.path.exists(filename):
-                    self.log.debug(f"Sending index file {filename} for request to {ctx.orig_path}")
+                    self.log.debug(
+                        f"Sending index file {filename} for request to {ctx.orig_path}"
+                    )
                     return self.send_file(filename)
 
             if self.autoindex:
-                self.log.debug(f"Performing directory listing of {full_path} for request to {ctx.orig_path}")
+                self.log.debug(
+                    f"Performing directory listing of {full_path} for request to {ctx.orig_path}"
+                )
 
                 lines = [f"# Directory listing of {ctx.orig_path}", ""]
 
@@ -147,5 +161,6 @@ class FilesystemResource():
             return self.send_file(full_path)
 
         self.log.debug("{full_path} not found")
-        return Response(Status.NOT_FOUND,
-                        f"{ctx.orig_path} was not found on this server.")
+        return Response(
+            Status.NOT_FOUND, f"{ctx.orig_path} was not found on this server."
+        )

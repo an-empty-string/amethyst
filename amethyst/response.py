@@ -28,7 +28,7 @@ class Status(Enum):
 
 
 @dataclass
-class Response():
+class Response:
     status_code: Status
     meta: str
     content: Optional[bytes] = None
