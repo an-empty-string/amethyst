@@ -18,6 +18,6 @@ setup(
         ],
     },
     install_requires=[
-        "cryptography ~= 36.0.0",
+        "cryptography",
     ],
 )
