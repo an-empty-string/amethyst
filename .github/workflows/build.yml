@@ -38,4 +38,5 @@ jobs:
 
     - name: Typecheck with mypy
       run: |
-        mypy amethyst amethyst_extensions
+        mypy --exclude setup.py amethyst
+        mypy --exclude setup.py amethyst_extensions
