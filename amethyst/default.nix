@@ -1,4 +1,9 @@
-{ lib, python3, extensionPackages ? [] }:
+{ lib
+, pkgs
+, python3
+, extensionPackages ? [
+  (pkgs.callPackage (import ../amethyst_extensions) {})
+]}:
 
 python3.pkgs.buildPythonApplication {
   pname = "amethyst";
