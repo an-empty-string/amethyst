@@ -11,15 +11,19 @@ SITE_PACKAGES_RE = re.compile(r"lib/python[^/]+/site-packages")
 PYTHON3_RE = re.compile(r"python3[^-]*")
 
 
-class PydocResource():
+class PydocResource:
     @staticmethod
     def classify(thing):
         if inspect.ismodule(thing):
             return "module"
         elif inspect.isclass(thing):
             return "class"
-        elif (inspect.isfunction(thing) or inspect.ismethod(thing) or
-              inspect.ismethoddescriptor(thing) or inspect.isroutine(thing)):
+        elif (
+            inspect.isfunction(thing)
+            or inspect.ismethod(thing)
+            or inspect.ismethoddescriptor(thing)
+            or inspect.isroutine(thing)
+        ):
             return "function"
         else:
             return "other"
@@ -33,7 +37,7 @@ class PydocResource():
             name = f"{name}.{cls.__name__}"
 
         lines.append(f"### {name}")
-        if (clsdoc := getattr(cls, "__doc__")):
+        if clsdoc := getattr(cls, "__doc__"):
             lines.append(f"```\n{clsdoc}\n```\n")
 
         members = {}
@@ -43,7 +47,11 @@ class PydocResource():
             if name.startswith("_"):
                 continue
 
-            if (classification := self.classify(member)) in {"class", "function", "other"}:
+            if (classification := self.classify(member)) in {
+                "class",
+                "function",
+                "other",
+            }:
                 members[classification].append((name, member))
 
         members["class"].sort()
@@ -69,7 +77,7 @@ class PydocResource():
         except ValueError:
             lines.append(f"{func.__name__}(...)")
 
-        if (funcdoc := getattr(func, "__doc__")):
+        if funcdoc := getattr(func, "__doc__"):
             lines.append(f"\n{textwrap.indent(funcdoc, '  ')}\n```\n")
         else:
             lines.append("```\n")
@@ -94,7 +102,7 @@ class PydocResource():
         except ImportError:
             return None
 
-        ispkg = (getattr(module, "__package__", "") == modname)
+        ispkg = getattr(module, "__package__", "") == modname
 
         lines.append("=> _ Back to module index")
         lines.append("=> _/search Go to module by name")
@@ -108,7 +116,7 @@ class PydocResource():
         else:
             lines.append(f"# {modname}")
 
-        if (moddoc := getattr(module, "__doc__")):
+        if moddoc := getattr(module, "__doc__"):
             lines.append(f"```\n{moddoc}\n```")
         else:
             lines.append("This module has no docstring.")
@@ -189,7 +197,6 @@ class PydocResource():
 
         return "\n".join(lines)
 
-
     async def __call__(self, ctx):
         path = ctx.path
         if not path:
@@ -205,15 +212,16 @@ class PydocResource():
                     importlib.import_module(ctx.query)
                     return Response(Status.REDIRECT_TEMPORARY, "../" + ctx.query)
                 except ImportError:
-                    return Response(Status.INPUT, f"Sorry, I don't know about {ctx.query}. Module name?")
+                    return Response(
+                        Status.INPUT,
+                        f"Sorry, I don't know about {ctx.query}. Module name?",
+                    )
 
             return Response(Status.INPUT, "Module name?")
         else:
             text = self.doc_mod(path)
 
         if text is not None:
-            return Response(
-                Status.SUCCESS, "text/gemini", text.encode()
-            )
+            return Response(Status.SUCCESS, "text/gemini", text.encode())
 
         return Response(Status.NOT_FOUND, "text/gemini")

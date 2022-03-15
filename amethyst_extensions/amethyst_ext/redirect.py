@@ -1,7 +1,7 @@
 from amethyst.response import Response, Status
 
 
-class RedirectResource():
+class RedirectResource:
     def __init__(self, to, permanent=False):
         self.to = to
         self.permanent = permanent
