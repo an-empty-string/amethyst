@@ -34,7 +34,6 @@ class Server:
             self.handle_connection,
             port=self.config.port,
             ssl=self.ssl_context,
-            loop=loop,
         )
 
     async def handle_connection(self, reader, writer):
