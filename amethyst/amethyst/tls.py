@@ -75,6 +75,11 @@ def update_certificate(
         with open(key_path, "rb") as f:
             key = serialization.load_pem_private_key(f.read(), password=None)
 
+        if not isinstance(key, rsa.RSAPrivateKey):
+            log.critical("Key already exists, but isn't RSA. Can't continue.")
+
+            raise ValueError("Existing private key is not RSA!")
+
     else:
         key = rsa.generate_private_key(
             public_exponent=65537,
