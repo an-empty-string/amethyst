@@ -1,5 +1,5 @@
-default_mime_types = {
-    ".txt": "text/plain",
-    ".gmi": "text/gemini",
-    ".jpg": "image/jpeg",
-}
+import mimetypes
+
+
+def init_mime_types():
+    mimetypes.add_type("text/gemini", ".gmi")

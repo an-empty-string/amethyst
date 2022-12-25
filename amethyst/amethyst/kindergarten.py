@@ -1,4 +1,5 @@
 from .config import Config
+from .mime import init_mime_types
 from .server import Server
 
 import asyncio
@@ -29,6 +30,10 @@ class ServerManager:
             host.tls.clear_context_cache()
 
     def start(self):
+        # XXX: Not sure a global MIME type configuration is "correct" here.
+        # Perhaps Server should be responsible for its own MimeTypes module?
+        init_mime_types()
+
         loop = asyncio.get_event_loop()
         loop.add_signal_handler(signal.SIGHUP, self.reconfigure)
 
@@ -39,7 +44,7 @@ class ServerManager:
 
 
 def cli():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     ServerManager(sys.argv[1]).start()
 
 

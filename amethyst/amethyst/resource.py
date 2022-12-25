@@ -1,10 +1,10 @@
 import asyncio
 import logging
+import mimetypes
 import os
 import os.path
 import subprocess
 
-from .mime import default_mime_types
 from .response import Status, Response
 from .request import Context
 
@@ -31,22 +31,16 @@ class FilesystemResource:
 
         self.index_files = ["index.gmi"]
 
-        self.mime_types = mime_types
-        if self.mime_types is None:
-            self.mime_types = default_mime_types
-
-        self.postprocessors = None
-        if self.postprocessors is None:
-            self.postprocessors = {}
-
         self.default_mime_type = default_mime_type
         self.root = os.path.abspath(root)
 
     def send_file(self, filename: str) -> Response:
         mime_type = self.default_mime_type
-        for ext in sorted(self.mime_types, key=len):
-            if filename.lower().endswith(ext.lower()):
-                mime_type = self.mime_types[ext]
+
+        candidate_mime_type, _encoding = mimetypes.guess_type(filename, strict=False)
+        self.log.debug(f"mimetypes says {filename=} has {candidate_mime_type=}")
+        if candidate_mime_type is not None:
+            mime_type = candidate_mime_type
 
         with open(filename, "rb") as f:
             contents = f.read()
