@@ -9,6 +9,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -51,7 +52,10 @@ def make_sni_context(config: "Config"):
     return c
 
 
-def update_certificate(cert_path: str, key_path: str, hosts: List[str]):
+def update_certificate(
+    cert_path: str, key_path: str, hosts: List[str]
+) -> datetime.datetime:
+    # Check to make sure we actually need to update the certificate
     if os.path.exists(cert_path):
         with open(cert_path, "rb") as f:
             cert = x509.load_pem_x509_certificate(f.read())
@@ -66,20 +70,27 @@ def update_certificate(cert_path: str, key_path: str, hosts: List[str]):
     else:
         log.info("Certificate does not exist yet, generating one now.")
 
-    key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=4096,
-    )
+    # Preserve the private key if it exists
+    if os.path.exists(key_path):
+        with open(key_path, "rb") as f:
+            key = serialization.load_pem_private_key(f.read(), password=None)
 
-    with open(key_path, "wb") as f:
-        f.write(
-            key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
+    else:
+        key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
         )
 
+        with open(key_path, "wb") as f:
+            f.write(
+                key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
+            )
+
+    # Generate a self-signed certificate
     subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, hosts[0])])
 
     cert = (
